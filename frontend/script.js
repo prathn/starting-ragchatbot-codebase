@@ -1,6 +1,10 @@
 // API base URL - use relative path to work from any host
 const API_URL = '/api';
 
+// Static login settings - any username is accepted with this password
+const LOGIN_PASSWORD = 'ammu123';
+const USER_STORAGE_KEY = 'ragUser';
+
 // Global state
 let currentSessionId = null;
 
@@ -15,11 +19,87 @@ document.addEventListener('DOMContentLoaded', () => {
     sendButton = document.getElementById('sendButton');
     totalCourses = document.getElementById('totalCourses');
     courseTitles = document.getElementById('courseTitles');
-    
+
+    setupAuth();
+
+    const user = getStoredUser();
+    if (user) {
+        showApp(user);
+    } else {
+        showLogin();
+    }
+});
+
+// Auth Functions
+function setupAuth() {
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const loginError = document.getElementById('loginError');
+
+        if (!username) {
+            loginError.textContent = 'Please enter a username.';
+            return;
+        }
+        if (password !== LOGIN_PASSWORD) {
+            loginError.textContent = 'Incorrect password. Please try again.';
+            document.getElementById('loginPassword').value = '';
+            return;
+        }
+
+        loginError.textContent = '';
+        setStoredUser(username);
+        showApp(username);
+    });
+
+    document.getElementById('signOffButton').addEventListener('click', () => {
+        clearStoredUser();
+        window.location.reload();
+    });
+}
+
+function showLogin() {
+    document.getElementById('appContainer').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('loginUsername').focus();
+}
+
+function showApp(username) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appContainer').classList.remove('hidden');
+    document.getElementById('userName').textContent = username;
+
     setupEventListeners();
     createNewSession();
     loadCourseStats();
-});
+    chatInput.focus();
+}
+
+// sessionStorage keeps the user signed in across reloads of the same tab
+function getStoredUser() {
+    try {
+        return sessionStorage.getItem(USER_STORAGE_KEY);
+    } catch (e) {
+        return null;
+    }
+}
+
+function setStoredUser(username) {
+    try {
+        sessionStorage.setItem(USER_STORAGE_KEY, username);
+    } catch (e) {
+        // Storage unavailable - login still works until the page is reloaded
+    }
+}
+
+function clearStoredUser() {
+    try {
+        sessionStorage.removeItem(USER_STORAGE_KEY);
+    } catch (e) {
+        // Nothing stored
+    }
+}
 
 // Event Listeners
 function setupEventListeners() {
